@@ -1,0 +1,81 @@
+# -----------------------------------------------------------------------
+# 1. KHỐI NETWORK: Mạng LAN ảo cho các Container giao tiếp nội bộ
+# -----------------------------------------------------------------------
+networks:
+  payment_network:
+    driver: bridge
+
+# -----------------------------------------------------------------------
+# 2. KHỐI VOLUMES: Khai báo các thư mục ẩn để dữ liệu không bị bay màu
+# -----------------------------------------------------------------------
+volumes:
+  mysql_data:
+  redis_data:
+  kafka_data:
+
+
+services:
+  # -----------------------------------------------------------------------
+  # 3. KHỐI DATABASE (MySQL 8.0) - Lưu trữ ACID & Sổ cái kế toán kép
+  # -----------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: payment_mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      TZ: Asia/Ho_Chi_Minh
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      # Ánh xạ thư mục chứa script tự động tạo DB vào đúng điểm neo của MySQL
+      - ./mysql-init:/docker-entrypoint-initdb.d
+      # Lưu vĩnh viễn dữ liệu xuống ổ cứng
+      - mysql_data:/var/lib/mysql
+    networks:
+      - payment_network
+
+  # -----------------------------------------------------------------------
+  # 4. KHỐI CACHING & LOCK (Redis) - Chống thanh toán đúp & Race Condition
+  # -----------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: payment_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes # Bật chế độ ghi log để không mất data khi sập
+    volumes:
+      - redis_data:/data
+    networks:
+      - payment_network
+
+  # -----------------------------------------------------------------------
+  # 5. KHỐI MESSAGE BROKER (Apache Kafka) - Bản chính hãng, KRaft siêu nhẹ
+  # -----------------------------------------------------------------------
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: payment_kafka
+    user: root
+    restart: always
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093
+      # Cấu hình đặc biệt cho 1 Node (Không có dòng này SAGA sẽ bị lỗi)
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+    volumes:
+      - kafka_data:/tmp/kafka-logs
+    networks:
+      - payment_network

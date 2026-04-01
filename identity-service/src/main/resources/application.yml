@@ -1,0 +1,20 @@
+server:
+  port: 8081 # Đứng gác ở cổng 8081 đúng như Gateway đã chỉ đường
+
+spring:
+  application:
+    name: identity-service
+  
+  # Cấu hình "Cắm ống nước" xuống MySQL trong Docker
+  datasource:
+    url: jdbc:mysql://localhost:3306/identity_db?useUnicode=true&characterEncoding=UTF-8
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      # RẤT QUAN TRỌNG: Đặt là 'validate' vì chúng ta đã tự tay tạo bảng bằng file SQL (02-create-tables.sql)
+      # Nó sẽ chỉ kiểm tra xem code Java có khớp với bảng MySQL không chứ không tự động xóa/tạo lại bảng.
+      ddl-auto: validate 
+    show-sql: true # Bật cái này lên để xem các câu lệnh SQL mà Hibernate tự động sinh ra dưới log

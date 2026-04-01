@@ -1,0 +1,5 @@
+# --- NỘI DUNG FILE .gitignore Ở THƯ MỤC GỐC ---
+.vscode/
+.idea/
+.DS_Store
+*.logx
