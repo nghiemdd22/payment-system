@@ -6,10 +6,26 @@ USE `identity_db`;
 CREATE TABLE IF NOT EXISTS `users` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `username` VARCHAR(50) NOT NULL UNIQUE,
+    `password` VARCHAR(255) NOT NULL,
     `email` VARCHAR(100) NOT NULL UNIQUE,
+    -- Giới hạn chỉ trong 3 loại tài khoản này
+    `role` ENUM(
+        'PERSONAL',
+        'MERCHANT',
+        'ADMIN'
+    ) NOT NULL DEFAULT 'PERSONAL',
     `status` VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
+USE `identity_db`;
+
+CREATE TABLE IF NOT EXISTS `refresh_tokens` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `token` VARCHAR(255) NOT NULL UNIQUE,
+    `expiry_date` TIMESTAMP NOT NULL,
+    `user_id` BIGINT NOT NULL,
+    CONSTRAINT `fk_refresh_token_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =========================================================================
 -- 2. WALLET & LEDGER SERVICE (Database: wallet_db)
 -- =========================================================================
@@ -21,7 +37,7 @@ CREATE TABLE IF NOT EXISTS `wallets` (
     `type` VARCHAR(30) NOT NULL COMMENT 'PERSONAL, MERCHANT...',
     `balance` DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     `version` INT NOT NULL DEFAULT 0 COMMENT 'Phục vụ Optimistic Lock chống tương tranh'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ledger_entries` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -31,7 +47,7 @@ CREATE TABLE IF NOT EXISTS `ledger_entries` (
     `direction` VARCHAR(10) NOT NULL COMMENT 'DEBIT (Trừ) / CREDIT (Cộng)',
     `post_balance` DECIMAL(15, 2) NOT NULL COMMENT 'Số dư ngay sau khi biến động',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- =========================================================================
 -- 3. TRANSACTION SERVICE (Database: transaction_db)
@@ -46,7 +62,7 @@ CREATE TABLE IF NOT EXISTS `transaction_requests` (
     `amount` DECIMAL(15, 2) NOT NULL,
     `type` VARCHAR(30) NOT NULL COMMENT 'P2P, CASH_OUT, PAYMENT...',
     `status` VARCHAR(20) NOT NULL COMMENT 'PENDING, SUCCESS, FAILED, ROLLBACKED'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- =========================================================================
 -- 4. RECONCILIATION SERVICE (Database: recon_db)
@@ -60,7 +76,7 @@ CREATE TABLE IF NOT EXISTS `reconciliation_reports` (
     `total_credit` DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     `discrepancy` DECIMAL(15, 2) NOT NULL DEFAULT 0.00 COMMENT 'Độ lệch, bắt buộc phải = 0',
     `status` VARCHAR(20) NOT NULL COMMENT 'MATCHED, UNMATCHED'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- =========================================================================
 -- 5. NOTIFICATION SERVICE (Database: notification_db)
@@ -72,4 +88,4 @@ CREATE TABLE IF NOT EXISTS `notifications` (
     `user_id` BIGINT NOT NULL,
     `title` VARCHAR(255) NOT NULL,
     `status` VARCHAR(20) NOT NULL COMMENT 'SENT, FAILED, UNREAD'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
