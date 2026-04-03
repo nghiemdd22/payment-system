@@ -1,4 +1,4 @@
-package com.payment.identity_service;
+package com.payment.identity_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,8 +19,14 @@ public class User {
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
+    @Column(nullable = false, length = 255)
+    private String password;
+
     @Column(nullable = false, unique = true, length = 100)
     private String email;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @Column(nullable = false, length = 20)
     private String status;
