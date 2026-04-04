@@ -7,6 +7,8 @@ import com.payment.identity_service.entity.Role;
 import com.payment.identity_service.entity.User;
 import com.payment.identity_service.repository.RefreshTokenRepository;
 import com.payment.identity_service.repository.UserRepository;
+
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import java.time.Instant;
@@ -55,6 +57,7 @@ public class AuthService {
     }
 
     // Trong AuthService.java
+    @Transactional
     public Map<String, String> login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("Sai thông tin!"));

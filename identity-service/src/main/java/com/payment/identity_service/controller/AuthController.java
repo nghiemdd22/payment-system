@@ -13,6 +13,7 @@ import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
 @RequestMapping("/api/v1/auth") // Đúng với đường dẫn bạn đã định tuyến ở Gateway
@@ -47,7 +48,7 @@ public class AuthController {
             accessCookie.setMaxAge(200 * 24 * 60 * 60); // 200 ngày
             response.addCookie(accessCookie);
 
-            // 2. Tạo Cookie cho Refresh Token (Hết hạn sau 7 ngày)
+            // 2. Tạo Cookie cho Refresh Token (Hết hạn sau 200 ngày)
             Cookie refreshCookie = new Cookie("refresh_token", refreshToken);
             refreshCookie.setHttpOnly(true);
             refreshCookie.setSecure(false);
@@ -96,4 +97,5 @@ public class AuthController {
 
         return ResponseEntity.ok("Đã đăng xuất và hủy thẻ thành công!");
     }
+
 }
