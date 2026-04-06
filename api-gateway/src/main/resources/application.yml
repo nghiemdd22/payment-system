@@ -11,6 +11,18 @@ spring:
 
   cloud:
     gateway:
+    # 1. Cấu hình CORS mở cửa cho Frontend
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "*" 
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
       server:
         webflux:
           routes:
