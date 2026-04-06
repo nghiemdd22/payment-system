@@ -1,25 +1,43 @@
 package com.payment.identity_service.service;
 
 import io.jsonwebtoken.Jwts;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.payment.identity_service.entity.User;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.Date;
 
 @Service
 public class JwtService {
 
-    private final KeyPair keyPair;
+    @Value("${jwt.private-key}")
+    private String privateKeyStr;
 
-    // Khi Service này khởi động, nó sẽ tự động rèn ra 1 cặp khóa RSA 2048-bit
-    public JwtService() throws NoSuchAlgorithmException {
-        KeyPairGenerator keyGenerator = KeyPairGenerator.getInstance("RSA");
-        keyGenerator.initialize(2048);
-        this.keyPair = keyGenerator.generateKeyPair();
+    @Value("${jwt.public-key}")
+    private String publicKeyStr;
+
+    private PrivateKey privateKey;
+    private PublicKey publicKey;
+
+    @PostConstruct
+    public void init() throws Exception {
+        byte[] privateBytes = Base64.getDecoder().decode(privateKeyStr);
+        byte[] publicBytes = Base64.getDecoder().decode(publicKeyStr);
+
+        PKCS8EncodedKeySpec privateSpec = new PKCS8EncodedKeySpec(privateBytes);
+        X509EncodedKeySpec publicSpec = new X509EncodedKeySpec(publicBytes);
+
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        this.privateKey = kf.generatePrivate(privateSpec);
+        this.publicKey = kf.generatePublic(publicSpec);
     }
 
     // Hàm này làm nhiệm vụ in thẻ JWT
@@ -32,20 +50,15 @@ public class JwtService {
                 .claim("role", user.getRole()) // Lưu Role vào thẻ để Gateway Service đọc được
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expirationTime))
-                .signWith(keyPair.getPrivate())
+                .signWith(this.privateKey)
                 .compact();
-    }
-
-    // Hàm này để mốt Gateway gọi sang lấy Public Key về xác thực
-    public Object getPublicKey() {
-        return keyPair.getPublic();
     }
 
     // Trong JwtService.java
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
-                    .verifyWith(keyPair.getPublic()) // Dùng Public Key để soi chữ ký RSA
+                    .verifyWith(this.publicKey) // Dùng Public Key để soi chữ ký RSA
                     .build()
                     .parseSignedClaims(token);
             return true;
@@ -57,7 +70,7 @@ public class JwtService {
 
     public String getUsernameFromToken(String token) {
         return Jwts.parser()
-                .verifyWith(keyPair.getPublic())
+                .verifyWith(this.publicKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
@@ -66,7 +79,7 @@ public class JwtService {
 
     public String getRoleFromToken(String token) {
         return Jwts.parser()
-                .verifyWith(keyPair.getPublic())
+                .verifyWith(this.publicKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
