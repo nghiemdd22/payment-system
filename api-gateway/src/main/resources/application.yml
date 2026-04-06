@@ -38,3 +38,5 @@ spring:
               uri: http://localhost:8083
               predicates:
                 - Path=/api/v1/transactions/**
+jwt:
+  public-key: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgwu6nlQzMQ74HZ2OpQ8pcABieFz4d/xpn/oq00d6S1I99G7Ou4eaG2vwvRujHHtIPOUP2ofQ27MJ49EfPj/g+gnnbwJJ5e1ccDoun6rJoSug20vSXrqPUYoJApR9M1SN89kgDZjmdwU1euivU/sVMwXXEz5tnif+Zs+y49iyi7dyRicP1gAGZFY1Ki5oFZcsGGaapU/BOSoEps7nGsgTamEqA5YfARx0yyZKoNQjN5f+5gXx8s2lZ5vFv6Vlz6keYqFSbZPI3IZCDBdqPDcGAu92d3PiYiqELbpEAx/v9FSJXWT+nTQpI1FbfiOa/YQDwfEihB9sX/MrmuBXn6JPqQIDAQAB"
