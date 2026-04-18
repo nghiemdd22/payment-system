@@ -1,7 +1,8 @@
 package com.payment.identity_service.entity;
 
 public enum Role {
-    PERSONAL,
+    USER,
     MERCHANT,
+    SYSTEM,
     ADMIN
 }

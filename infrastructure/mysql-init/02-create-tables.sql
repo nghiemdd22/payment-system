@@ -1,4 +1,21 @@
 -- =========================================================================
+-- KHỞI TẠO CÁC DATABASE VÀ CẤP QUYỀN
+-- =========================================================================
+CREATE DATABASE IF NOT EXISTS `identity_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE DATABASE IF NOT EXISTS `wallet_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE DATABASE IF NOT EXISTS `transaction_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE DATABASE IF NOT EXISTS `recon_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE DATABASE IF NOT EXISTS `notification_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+GRANT ALL PRIVILEGES ON *.* TO 'root' @'%';
+
+FLUSH PRIVILEGES;
+
+-- =========================================================================
 -- 1. IDENTITY SERVICE (Database: identity_db)
 -- =========================================================================
 USE `identity_db`;
@@ -8,16 +25,14 @@ CREATE TABLE IF NOT EXISTS `users` (
     `username` VARCHAR(50) NOT NULL UNIQUE,
     `password` VARCHAR(255) NOT NULL,
     `email` VARCHAR(100) NOT NULL UNIQUE,
-    -- Giới hạn chỉ trong 3 loại tài khoản này
     `role` ENUM(
-        'PERSONAL',
+        'USER',
         'MERCHANT',
+        'SYSTEM',
         'ADMIN'
-    ) NOT NULL DEFAULT 'PERSONAL',
+    ) NOT NULL DEFAULT 'USER',
     `status` VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
-
-USE `identity_db`;
 
 CREATE TABLE IF NOT EXISTS `refresh_tokens` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -26,6 +41,7 @@ CREATE TABLE IF NOT EXISTS `refresh_tokens` (
     `user_id` BIGINT NOT NULL,
     CONSTRAINT `fk_refresh_token_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
 -- =========================================================================
 -- 2. WALLET & LEDGER SERVICE (Database: wallet_db)
 -- =========================================================================
@@ -33,9 +49,14 @@ USE `wallet_db`;
 
 CREATE TABLE IF NOT EXISTS `wallets` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `user_id` BIGINT NOT NULL COMMENT 'Khóa ngoại mềm trỏ tới identity_db.users.id',
-    `type` VARCHAR(30) NOT NULL COMMENT 'PERSONAL, MERCHANT...',
+    `user_id` BIGINT NOT NULL UNIQUE COMMENT 'Khóa ngoại mềm trỏ tới identity_db.users.id',
+    `type` ENUM(
+        'DEFAULT',
+        'BUSINESS',
+        'SYSTEM'
+    ) NOT NULL,
     `balance` DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    `currency` VARCHAR(3) NOT NULL DEFAULT 'VND',
     `version` INT NOT NULL DEFAULT 0 COMMENT 'Phục vụ Optimistic Lock chống tương tranh'
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
@@ -44,8 +65,9 @@ CREATE TABLE IF NOT EXISTS `ledger_entries` (
     `transaction_id` BIGINT NOT NULL COMMENT 'Mã giao dịch sinh ra bút toán này',
     `wallet_id` BIGINT NOT NULL,
     `amount` DECIMAL(15, 2) NOT NULL,
-    `direction` VARCHAR(10) NOT NULL COMMENT 'DEBIT (Trừ) / CREDIT (Cộng)',
+    `direction` ENUM('DEBIT', 'CREDIT') NOT NULL COMMENT 'DEBIT (Trừ) / CREDIT (Cộng)',
     `post_balance` DECIMAL(15, 2) NOT NULL COMMENT 'Số dư ngay sau khi biến động',
+    `description` VARCHAR(255) COMMENT 'Nội dung bút toán (VD: Nạp tiền từ VCB)',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
@@ -60,8 +82,8 @@ CREATE TABLE IF NOT EXISTS `transaction_requests` (
     `from_wallet_id` BIGINT NOT NULL,
     `to_wallet_id` BIGINT NOT NULL,
     `amount` DECIMAL(15, 2) NOT NULL,
-    `type` VARCHAR(30) NOT NULL COMMENT 'P2P, CASH_OUT, PAYMENT...',
-    `status` VARCHAR(20) NOT NULL COMMENT 'PENDING, SUCCESS, FAILED, ROLLBACKED'
+    `type` VARCHAR(30) NOT NULL COMMENT 'P2P, CASH_OUT, PAYMENT, BILL_PAYMENT...',
+    `status` VARCHAR(20) NOT NULL COMMENT 'PENDING, SUCCESS, FAILED, ROLLBACKED...'
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- =========================================================================
@@ -87,5 +109,67 @@ CREATE TABLE IF NOT EXISTS `notifications` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `user_id` BIGINT NOT NULL,
     `title` VARCHAR(255) NOT NULL,
-    `status` VARCHAR(20) NOT NULL COMMENT 'SENT, FAILED, UNREAD'
+    `body` TEXT NOT NULL,
+    `status` VARCHAR(20) NOT NULL COMMENT 'SENT, FAILED, UNREAD',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- =========================================================================
+-- 6. DỮ LIỆU MỒI (SEED DATA) CHO VÍ HỆ THỐNG (POOL ACCOUNTS)
+-- =========================================================================
+USE `identity_db`;
+
+INSERT INTO
+    `users` (
+        `id`,
+        `username`,
+        `password`,
+        `email`,
+        `role`,
+        `status`
+    )
+VALUES (
+        1,
+        'system_vcb',
+        '$2a$10$wN1Q/X...',
+        'vcb@system.local',
+        'SYSTEM',
+        'ACTIVE'
+    ),
+    (
+        2,
+        'system_mb',
+        '$2a$10$xZ8K/T...',
+        'mb@system.local',
+        'SYSTEM',
+        'ACTIVE'
+    );
+
+USE `wallet_db`;
+
+INSERT INTO
+    `wallets` (
+        `id`,
+        `user_id`,
+        `type`,
+        `balance`,
+        `currency`,
+        `version`
+    )
+VALUES (
+        1,
+        1,
+        'SYSTEM',
+        0.00,
+        'VND',
+        0
+    ), -- Quỹ hệ thống liên kết VCB
+    (
+        2,
+        2,
+        'SYSTEM',
+        0.00,
+        'VND',
+        0
+    );
+-- Quỹ hệ thống liên kết MB

@@ -43,8 +43,8 @@ public class AuthService {
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
-                // Chuyển chữ gửi lên thành Enum, nếu không gửi mặc định là PERSONAL
-                .role(request.getRole() != null ? Role.valueOf(request.getRole().toUpperCase()) : Role.PERSONAL)
+                // Chuyển chữ gửi lên thành Enum, nếu không gửi mặc định là USER
+                .role(request.getRole() != null ? Role.valueOf(request.getRole().toUpperCase()) : Role.USER)
                 .status("ACTIVE")
                 .build();
 

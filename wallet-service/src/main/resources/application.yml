@@ -1,0 +1,14 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: wallet-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/wallet_db?useUnicode=true&characterEncoding=utf-8
+    username: root
+    password: root  
+  jpa:
+    hibernate:
+      ddl-auto: update # Tự động map Entity xuống Table
+    show-sql: true # Bật lên để xem Hibernate sinh câu lệnh SQL (rất hữu ích khi debug)

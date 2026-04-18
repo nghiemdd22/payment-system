@@ -46,7 +46,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
         // 1. Bỏ qua các đường dẫn không cần xác thực (Login/Register)
         if (path.contains("/api/v1/auth/login") || path.contains("/api/v1/auth/register")
-                || path.contains("/api/v1/auth/logout") || path.contains("/api/v1/auth/refresh-token")) {
+                || path.contains("/api/v1/auth/logout") || path.contains("/api/v1/auth/refresh")) {
             return chain.filter(exchange);
         }
 

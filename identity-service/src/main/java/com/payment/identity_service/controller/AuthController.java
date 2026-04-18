@@ -13,7 +13,6 @@ import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
 @RequestMapping("/api/v1/auth") // Đúng với đường dẫn bạn đã định tuyến ở Gateway
