@@ -2,6 +2,7 @@ package com.payment.transaction_service.service;
 
 import com.payment.transaction_service.entity.TransactionRequest;
 import com.payment.transaction_service.exception.DuplicateTransactionException;
+import com.payment.transaction_service.exception.TransactionProcessingException;
 import com.payment.transaction_service.repository.TransactionRequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,13 +18,15 @@ import java.time.Duration;
 public class TransactionService {
 
     private final StringRedisTemplate redisTemplate;
-    private final TransactionRequestRepository repository;
+    private final TransactionRequestRepository transactionRequestRepository;
 
     /**
      * Nhận Request và kiểm tra Lũy đẳng (Idempotency)
      */
     public String initTransaction(String idempotencyKey, Long fromWallet, Long toWallet, BigDecimal amount,
             String type) {
+        validateRequest(idempotencyKey, fromWallet, toWallet, amount, type);
+
         String redisKey = "idem:key:" + idempotencyKey;
 
         // 1. Tuyệt chiêu SETNX của Redis (setIfAbsent)
@@ -32,6 +35,10 @@ public class TransactionService {
         // tuyệt đối.
         Boolean isNewRequest = redisTemplate.opsForValue()
                 .setIfAbsent(redisKey, "PENDING", Duration.ofMinutes(10));
+
+        if (isNewRequest == null) {
+            throw new TransactionProcessingException("Không thể kiểm tra idempotency lúc này. Vui lòng thử lại.");
+        }
 
         if (Boolean.FALSE.equals(isNewRequest)) {
             // Key ĐÃ TỒN TẠI -> Đây là request bị bấm đúp hoặc spam!
@@ -55,13 +62,18 @@ public class TransactionService {
                 .status("PENDING")
                 .build();
 
-        // repository.save(newTxn);
+        // transactionRequestRepository.save(newTxn);
         try {
-            repository.save(newTxn);
+            transactionRequestRepository.save(newTxn);
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
             // Redis quên, nhưng MySQL vẫn nhớ -> Chặn đứng!
-            log.error("Cảnh báo: Database đã tồn tại Idempotency-Key này: {}", idempotencyKey);
-            throw new RuntimeException("Giao dịch đã tồn tại. Xin đừng gửi trùng lặp!");
+            log.warn("Database da ton tai Idempotency-Key: {}", idempotencyKey);
+            throw new DuplicateTransactionException("Giao dịch đã tồn tại. Xin đừng gửi trùng lặp!");
+        } catch (Exception ex) {
+            // Không lưu được DB thì xóa lock Redis để request hợp lệ có thể retry.
+            redisTemplate.delete(redisKey);
+            log.error("Loi khi luu giao dich Idempotency-Key: {}", idempotencyKey, ex);
+            throw new TransactionProcessingException("Không thể khởi tạo giao dịch lúc này. Vui lòng thử lại.");
         }
 
         // 3. (Tuần sau) Tại đây sẽ áp dụng Strategy Pattern:
@@ -69,5 +81,24 @@ public class TransactionService {
         // Nếu type == PAYMENT -> Bắn message vào Kafka
 
         return "Giao dịch " + newTxn.getId() + " đã được tiếp nhận!";
+    }
+
+    private void validateRequest(String idempotencyKey, Long fromWallet, Long toWallet, BigDecimal amount,
+            String type) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new IllegalArgumentException("Idempotency-Key không được để trống");
+        }
+        if (fromWallet == null || toWallet == null) {
+            throw new IllegalArgumentException("fromWallet và toWallet là bắt buộc");
+        }
+        if (fromWallet.equals(toWallet)) {
+            throw new IllegalArgumentException("fromWallet và toWallet không được trùng nhau");
+        }
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("amount phải lớn hơn 0");
+        }
+        if (type == null || type.isBlank()) {
+            throw new IllegalArgumentException("type không được để trống");
+        }
     }
 }
