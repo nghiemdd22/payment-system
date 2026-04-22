@@ -11,60 +11,62 @@ spring:
 
   cloud:
     gateway:
-    # 1. Cấu hình CORS mở cửa cho Frontend
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins: "*" 
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
+      # 1. Cấu hình CORS mở cửa cho Frontend (Phiên bản mới)
       server:
         webflux:
-          routes:
-            # Tuyến đường 1: Identity Service (Xác thực & Chống DDoS)
-            - id: identity-service
-              uri: http://localhost:8081
-              predicates:
-                - Path=/api/v1/auth/**
-              filters:
-                - name: RequestRateLimiter
-                  args:
-                    redis-rate-limiter.replenishRate: 1
-                    redis-rate-limiter.burstCapacity: 1
-                    redis-rate-limiter.requestedTokens: 1
-                    key-resolver: "#{@ipKeyResolver}"
-              
-            # Tuyến đường 2: Wallet Service (Xem số dư)
-            - id: wallet-service
-              uri: http://localhost:8082
-              predicates:
-                - Path=/api/v1/wallets/**
-              filters:
-                # 2. Thêm Khiên bảo vệ cho Wallet Service
-                - name: RequestRateLimiter
-                  args:
-                    redis-rate-limiter.replenishRate: 20
-                    redis-rate-limiter.burstCapacity: 50
-                    redis-rate-limiter.requestedTokens: 1
-                    key-resolver: "#{@ipKeyResolver}"
+          globalcors:
+            cors-configurations: # LƯU Ý: Có dấu gạch ngang ở giữa
+              '[/**]':
+                allowedOrigins: "*" 
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders: "*"
+      
+      # 2. Cấu hình Routes (LƯU Ý: Chữ 'routes' phải nằm ngang hàng với chữ 'server' ở trên)
+      routes:
+        # Tuyến đường 1: Identity Service (Xác thực & Chống DDoS)
+        - id: identity-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 1
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
+          
+        # Tuyến đường 2: Wallet Service (Xem số dư)
+        - id: wallet-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/v1/wallets/**
+          filters:
+            # Thêm Khiên bảo vệ cho Wallet Service
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 50
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
 
-            # Tuyến đường 3: Transaction Service (Thực hiện giao dịch)
-            - id: transaction-service
-              uri: http://localhost:8083
-              predicates:
-                - Path=/api/v1/transactions/**
-              filters:
-                # 3. Thêm Khiên bảo vệ cho Transaction Service
-                - name: RequestRateLimiter
-                  args:
-                    redis-rate-limiter.replenishRate: 10
-                    redis-rate-limiter.burstCapacity: 30
-                    redis-rate-limiter.requestedTokens: 1
-                    key-resolver: "#{@ipKeyResolver}"
+        # Tuyến đường 3: Transaction Service (Thực hiện giao dịch)
+        - id: transaction-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/v1/transactions/**
+          filters:
+            # Thêm Khiên bảo vệ cho Transaction Service
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 30
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
 jwt:
   public-key: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgwu6nlQzMQ74HZ2OpQ8pcABieFz4d/xpn/oq00d6S1I99G7Ou4eaG2vwvRujHHtIPOUP2ofQ27MJ49EfPj/g+gnnbwJJ5e1ccDoun6rJoSug20vSXrqPUYoJApR9M1SN89kgDZjmdwU1euivU/sVMwXXEz5tnif+Zs+y49iyi7dyRicP1gAGZFY1Ki5oFZcsGGaapU/BOSoEps7nGsgTamEqA5YfARx0yyZKoNQjN5f+5gXx8s2lZ5vFv6Vlz6keYqFSbZPI3IZCDBdqPDcGAu92d3PiYiqELbpEAx/v9FSJXWT+nTQpI1FbfiOa/YQDwfEihB9sX/MrmuBXn6JPqQIDAQAB"
