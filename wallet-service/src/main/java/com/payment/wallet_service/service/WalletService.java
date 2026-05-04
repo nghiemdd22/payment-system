@@ -86,4 +86,10 @@ public class WalletService {
 
         log.info("Giao dịch P2P ID: {} thành công!", transactionId);
     }
+
+        public String getWalletType(Long walletId) {
+                Wallet wallet = walletRepository.findById(walletId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Ví"));
+                return wallet.getType().name();
+        }
 }

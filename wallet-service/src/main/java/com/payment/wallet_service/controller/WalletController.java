@@ -33,4 +33,12 @@ public class WalletController {
                 "message", "Chuyển tiền P2P thành công",
                 "transaction_id", transactionId));
     }
+
+    @GetMapping("/{walletId}/type")
+    public ResponseEntity<Map<String, Object>> getWalletType(@PathVariable Long walletId) {
+        String type = walletService.getWalletType(walletId);
+        return ResponseEntity.ok(Map.of(
+                "wallet_id", walletId,
+                "type", type));
+    }
 }

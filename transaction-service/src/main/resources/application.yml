@@ -29,3 +29,15 @@ spring:
       timeout: 60000ms  # Thời gian chờ tối đa khi kết nối
       # password:       # Bỏ comment dòng này nếu Redis Docker của bạn có cài pass
 
+  cloud:
+    openfeign:
+      client:
+        config:
+          walletServiceClient:
+            connectTimeout: 2000
+            readTimeout: 5000
+            loggerLevel: basic
+
+wallet-service:
+  base-url: http://localhost:8082
+
