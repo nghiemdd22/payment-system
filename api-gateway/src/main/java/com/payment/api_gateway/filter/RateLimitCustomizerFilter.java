@@ -31,7 +31,7 @@ public class RateLimitCustomizerFilter implements GlobalFilter, Ordered {
                     // 1. Đổi kiểu dữ liệu thành JSON
                     getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
-                    // 2. Viết câu thông báo lỗi tùy chỉnh của bạn
+                    // 2. Viết câu thông báo lỗi tùy chỉnh
                     String jsonResponse = "{\"code\": 429, \"error\": \"Too Many Requests\", \"message\": \"Bạn đang thao tác quá nhanh. Hệ thống đã chặn để chống DDoS!\"}";
 
                     // 3. Đóng gói thành DataBuffer (chuẩn của WebFlux)

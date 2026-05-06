@@ -29,6 +29,22 @@ spring:
       timeout: 60000ms  # Thời gian chờ tối đa khi kết nối
       # password:       # Bỏ comment dòng này nếu Redis Docker của bạn có cài pass
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: transaction-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.payment
+        spring.json.value.default.type: com.payment.transaction_service.event.TransferCompletedEvent
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
   cloud:
     openfeign:
       client:
@@ -40,4 +56,10 @@ spring:
 
 wallet-service:
   base-url: http://localhost:8082
+
+app:
+  kafka:
+    topics:
+      transfer-requested: txn.transfer.requested
+      transfer-completed: txn.transfer.completed
 
