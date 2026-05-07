@@ -1,4 +1,4 @@
-package com.payment.wallet_service.event;
+package com.payment.transaction_service.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,20 +13,18 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TransferRequestedEvent {
+public class TransferRollbackRequestedEvent {
 
-    // Mã giao dịch trong transaction-service
+    // Mã giao dịch cần rollback
     private Long transactionId;
-    // Ví gửi
+    // Ví gửi ban đầu
     private Long fromWalletId;
-    // Ví nhận
+    // Ví nhận ban đầu
     private Long toWalletId;
-    // Số tiền giao dịch
+    // Số tiền cần hoàn
     private BigDecimal amount;
     // Idempotency key để chống gửi trùng
     private String idempotencyKey;
-    // Loại/nguồn giao dịch
-    private String type;
-    // Mô tả giao dịch
-    private String description;
+    // Lý do rollback
+    private String reason;
 }

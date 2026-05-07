@@ -22,15 +22,18 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: com.payment
-        spring.json.value.default.type: com.payment.wallet_service.event.TransferRequestedEvent
+        spring.json.use.type.headers: true
+        spring.json.type.mapping: com.payment.transaction_service.event.TransferRequestedEvent:com.payment.wallet_service.event.TransferRequestedEvent,com.payment.transaction_service.event.TransferRollbackRequestedEvent:com.payment.wallet_service.event.TransferRollbackRequestedEvent
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
-        spring.json.add.type.headers: false
+        spring.json.add.type.headers: true
 
 app:
   kafka:
     topics:
       transfer-requested: txn.transfer.requested
       transfer-completed: txn.transfer.completed
+      transfer-rollback-requested: txn.transfer.rollback.requested
+      transfer-rollback-completed: txn.transfer.rollback.completed

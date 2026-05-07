@@ -11,16 +11,14 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TransferCompletedEvent {
+public class TransferRollbackCompletedEvent {
 
-    // Mã giao dịch trong transaction-service
+    // Mã giao dịch đang được rollback
     private Long transactionId;
-    // Trạng thái xử lý: SUCCESS hoặc FAILED
+    // Trạng thái rollback: SUCCESS hoặc FAILED
     private String status;
-    // Thông điệp kết quả
+    // Thông điệp kết quả rollback
     private String message;
     // Idempotency key để truy vết trạng thái
     private String idempotencyKey;
-    // Có cần kích hoạt rollback không
-    private boolean rollbackRequired;
 }
